@@ -1321,6 +1321,7 @@ class DoclingDocument(BaseModel):
         indent: int = 4,
         text_width: int = -1,
         page_no: Optional[int] = None,
+        include_page_numbers: bool = False,
     ) -> str:
         r"""Serialize to Markdown.
 
@@ -1355,10 +1356,18 @@ class DoclingDocument(BaseModel):
         list_nesting_level = 0  # Track the current list nesting level
         previous_level = 0  # Track the previous item's level
         in_list = False  # Track if we're currently processing list items
+        current_page_no = None # Track the current page number
 
         for ix, (item, level) in enumerate(
             self.iterate_items(self.body, with_groups=True, page_no=page_no)
         ):
+            if include_page_numbers:
+                if hasattr(item, 'prov') and item.prov and len(item.prov) > 0:
+                    page_no = item.prov[0].page_no
+                    if page_no != current_page_no:
+                        current_page_no = page_no
+                        mdtexts.append(f"[PAGE{current_page_no}]\n")
+                        
             # If we've moved to a lower level, we're exiting one or more groups
             if level < previous_level:
                 # Calculate how many levels we've exited
